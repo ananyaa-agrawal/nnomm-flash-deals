@@ -1,0 +1,53 @@
+# Starts PostgreSQL and two instances of the service sharing one database.
+# Secrets are never committed: export JWT_SECRET and WEBHOOK_SECRET, or copy
+# .env.example to .env (git-ignored) before running `docker compose up`.
+x-app-env: &app-env
+  DATABASE_URL: jdbc:postgresql://db:5432/flashdeals
+  DATABASE_USER: ${DATABASE_USER:-flashdeals}
+  DATABASE_PASSWORD: ${DATABASE_PASSWORD:-flashdeals}
+  JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (see .env.example)}
+  WEBHOOK_SECRET: ${WEBHOOK_SECRET:?set WEBHOOK_SECRET (see .env.example)}
+  CLAIM_TTL_SECONDS: ${CLAIM_TTL_SECONDS:-600}
+  PORT: "8080"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: flashdeals
+      POSTGRES_USER: ${DATABASE_USER:-flashdeals}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-flashdeals}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d flashdeals"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  app1:
+    build: .
+    image: nnomm-flash-deals:local
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      <<: *app-env
+      INSTANCE_ID: app1
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  app2:
+    image: nnomm-flash-deals:local
+    depends_on:
+      db:
+        condition: service_healthy
+      app1:
+        condition: service_started
+    environment:
+      <<: *app-env
+      INSTANCE_ID: app2
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
