@@ -114,10 +114,19 @@ HS512, tampered payload, expired, missing `exp`), validation, 413, and
 
 ## AI tools
 
-> ✍️ **Rewrite this section in your own words before submitting.** It must be honest about what you did.
-
-- **Claude Code (Claude Opus)** — I used it to scaffold the project and draft
-  the code, tests and these docs from the brief. I then reviewed every line and
-  ran the test suite.
-- **A suggestion I rejected:** *(fill in a real example from your own review,
-  for instance a design you questioned and changed)*.
+- **Claude Code (Claude Opus)** wrote the project with me from the brief: the
+  Kotlin code, SQL migration, tests, Docker setup, demo script and these docs.
+  I ran the test suite, `docker compose up` with both instances, and
+  `scripts/demo.sh` on my machine to check the results.
+- **AI output that was rejected or corrected:**
+  - The first version decoded numeric fields with kotlinx.serialization's
+    default `Long` decoder, which silently accepts `"price_paise": "9900"` (a
+    string). The validation tests caught it, and it was replaced with a strict
+    integer decoder (`StrictLongSerializer` in `http/Http.kt`), so money can't
+    arrive as text.
+  - Storing an `IN_PROGRESS` idempotency row with a lease was rejected. A crash
+    would leave the key blocked until the lease ran out. Writing the key in the
+    same transaction as the claim means a crash rolls it back immediately
+    (DESIGN.md §2).
+  - Guarding claims with a Kotlin `Mutex` was rejected, because it can't
+    coordinate two separate instances (DESIGN.md §1).
