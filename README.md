@@ -26,6 +26,14 @@ so they apply them only once).
 | `PORT` | no | `8080` |
 | `EXPIRY_INTERVAL_MILLIS`, `DB_POOL_SIZE` | no | `1000`, `20` |
 
+Then, in a second terminal, walk through every feature in one go: create a
+deal, claim it, retry it, get sold out, get blocked by auth, pay it through a
+signed webhook, and send 100 simultaneous claims at a 10-unit deal:
+
+```bash
+./scripts/demo.sh
+```
+
 Extra endpoints: `GET /health`, and `GET /metrics` (Prometheus format). Logs are
 JSON lines carrying a `request_id` (taken from `X-Request-Id` or generated, and
 echoed back in the response).
